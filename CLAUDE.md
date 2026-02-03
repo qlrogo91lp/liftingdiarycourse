@@ -17,17 +17,17 @@ npm run lint     # ESLint 검사
 
 ## Architecture
 
-- **App Router**: `app/` 디렉토리 기반 라우팅 (pages 방식 아님)
+- **App Router**: `src/app/` 디렉토리 기반 라우팅 (pages 방식 아님)
 - **Authentication**: Clerk (`@clerk/nextjs`)
 - **Styling**: Tailwind CSS v4 + PostCSS
 - **Fonts**: Geist, Geist_Mono (next/font 자동 최적화)
 
 ## Key Files
 
-- `app/layout.tsx` - 루트 레이아웃, ClerkProvider 래핑
-- `app/page.tsx` - 메인 페이지
-- `app/globals.css` - 전역 스타일, Tailwind 통합
-- `middleware.ts` - Clerk 인증 미들웨어
+- `src/app/layout.tsx` - 루트 레이아웃, ClerkProvider 래핑
+- `src/app/page.tsx` - 메인 페이지
+- `src/app/globals.css` - 전역 스타일, Tailwind 통합
+- `src/middleware.ts` - Clerk 인증 미들웨어
 
 ## Authentication (Clerk)
 
@@ -37,6 +37,6 @@ npm run lint     # ESLint 검사
 
 ## Code Conventions
 
-- **Imports**: 절대 경로 사용 (`@/` → 프로젝트 루트)
+- **Imports**: 절대 경로 사용 (`@/` → `src/` 디렉토리)
 - **TypeScript**: strict mode 활성화
 - **Styling**: Tailwind CSS 유틸리티 클래스 사용
