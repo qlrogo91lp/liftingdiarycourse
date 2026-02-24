@@ -1,82 +1,86 @@
-import { pgTable, text, timestamp, uuid, integer, decimal, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  text,
+  timestamp,
+  integer,
+  decimal,
+} from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
-// ============================================
-// Exercises 테이블 (운동 종목)
-// ============================================
-export const exercises = pgTable('exercises', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  name: text('name').notNull().unique(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => [
-  uniqueIndex('exercises_name_idx').on(table.name),
-]);
-
-// ============================================
-// Workouts 테이블 (운동 세션)
-// ============================================
+// Workouts table
 export const workouts = pgTable('workouts', {
   id: uuid('id').primaryKey().defaultRandom(),
-  clerkId: text('clerk_id').notNull(),
-  startedAt: timestamp('started_at'),
+  userId: text('user_id').notNull(),
+  name: text('name').notNull(),
+  startedAt: timestamp('started_at').notNull(),
   completedAt: timestamp('completed_at'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => [
-  index('workouts_clerk_id_idx').on(table.clerkId),
-]);
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
 
-// ============================================
-// Workout Exercises 테이블 (세션 내 운동)
-// ============================================
+// Exercises table (exercise library/catalog)
+export const exercises = pgTable('exercises', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+// Workout exercises junction table
 export const workoutExercises = pgTable('workout_exercises', {
   id: uuid('id').primaryKey().defaultRandom(),
-  workoutId: uuid('workout_id').notNull().references(() => workouts.id, { onDelete: 'cascade' }),
-  exerciseId: uuid('exercise_id').references(() => exercises.id, { onDelete: 'set null' }),
-  order: integer('order').notNull().default(0),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-}, (table) => [
-  index('workout_exercises_workout_id_idx').on(table.workoutId),
-  index('workout_exercises_exercise_id_idx').on(table.exerciseId),
-]);
+  workoutId: uuid('workout_id')
+    .notNull()
+    .references(() => workouts.id, { onDelete: 'cascade' }),
+  exerciseId: uuid('exercise_id')
+    .notNull()
+    .references(() => exercises.id),
+  order: integer('order').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
 
-// ============================================
-// Sets 테이블 (세트 기록)
-// ============================================
+// Sets table
 export const sets = pgTable('sets', {
   id: uuid('id').primaryKey().defaultRandom(),
-  workoutExerciseId: uuid('workout_exercise_id').notNull().references(() => workoutExercises.id, { onDelete: 'cascade' }),
+  workoutExerciseId: uuid('workout_exercise_id')
+    .notNull()
+    .references(() => workoutExercises.id, { onDelete: 'cascade' }),
   setNumber: integer('set_number').notNull(),
-  weight: decimal('weight', { precision: 5, scale: 2 }),
+  weight: decimal('weight', { precision: 10, scale: 2 }),
   reps: integer('reps'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-}, (table) => [
-  index('sets_workout_exercise_id_idx').on(table.workoutExerciseId),
-]);
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
 
-// ============================================
-// Relations 정의
-// ============================================
-export const exercisesRelations = relations(exercises, ({ many }) => ({
-  workoutExercises: many(workoutExercises),
-}));
-
+// Relations
 export const workoutsRelations = relations(workouts, ({ many }) => ({
   workoutExercises: many(workoutExercises),
 }));
 
-export const workoutExercisesRelations = relations(workoutExercises, ({ one, many }) => ({
-  workout: one(workouts, {
-    fields: [workoutExercises.workoutId],
-    references: [workouts.id],
-  }),
-  exercise: one(exercises, {
-    fields: [workoutExercises.exerciseId],
-    references: [exercises.id],
-  }),
-  sets: many(sets),
+export const exercisesRelations = relations(exercises, ({ many }) => ({
+  workoutExercises: many(workoutExercises),
 }));
+
+export const workoutExercisesRelations = relations(
+  workoutExercises,
+  ({ one, many }) => ({
+    workout: one(workouts, {
+      fields: [workoutExercises.workoutId],
+      references: [workouts.id],
+    }),
+    exercise: one(exercises, {
+      fields: [workoutExercises.exerciseId],
+      references: [exercises.id],
+    }),
+    sets: many(sets),
+  }),
+);
 
 export const setsRelations = relations(sets, ({ one }) => ({
   workoutExercise: one(workoutExercises, {
@@ -84,18 +88,3 @@ export const setsRelations = relations(sets, ({ one }) => ({
     references: [workoutExercises.id],
   }),
 }));
-
-// ============================================
-// Type exports
-// ============================================
-export type Exercise = typeof exercises.$inferSelect;
-export type NewExercise = typeof exercises.$inferInsert;
-
-export type Workout = typeof workouts.$inferSelect;
-export type NewWorkout = typeof workouts.$inferInsert;
-
-export type WorkoutExercise = typeof workoutExercises.$inferSelect;
-export type NewWorkoutExercise = typeof workoutExercises.$inferInsert;
-
-export type Set = typeof sets.$inferSelect;
-export type NewSet = typeof sets.$inferInsert;
